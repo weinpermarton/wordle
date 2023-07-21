@@ -75,7 +75,7 @@ class Game:
 		self.tip_list                       = []
 		self.used_letters                   = {}#letter:color
 		self.letters                        = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
-		self.color_list                     = ["yellow","grey","green","black"]
+		self.color_list                     = ["black","grey","green","black"]
 		self.vertical_separate_character  = "|"
 		self.current_user_input             = ""
 		self.WIN                            = "win"
@@ -214,25 +214,24 @@ class Game:
 			else:
 				self.system_message = "Word is too long"
 
+	def draw_display(self):
+		screen_to_display = ""
+		# clear_screen()
+		screen_to_display = "\033[H\033[J"
+		screen_to_display += draw_horizontal_line(self.wordlen+1,line_characters="____")
+		screen_to_display += self.draw_board()
+		screen_to_display += self.print_letters()
+		screen_to_display += self.system_message
+		print(screen_to_display,end="")
+
 	def play(self):
-		returnstring = ""
-		clear_screen()
-		returnstring += draw_horizontal_line(self.wordlen+1,line_characters="____")
-		returnstring += self.draw_board()
-		returnstring += self.print_letters()
-		print(returnstring,end="")
+		self.draw_display()
 		while(True):
 			returnstring = ""
-			# Usage
 			# draw_horizontal_line(self.wordlen)
 			self.read_user_input()
 			is_over = self.is_over_game()
-			clear_screen()
-			returnstring += draw_horizontal_line(self.wordlen+1,line_characters="____")
-			returnstring += self.draw_board()
-			returnstring += self.print_letters()
-			returnstring += self.system_message
-			print(returnstring,end="")
+			self.draw_display()
 			if is_over:
 				return
 
