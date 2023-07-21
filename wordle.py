@@ -1,24 +1,53 @@
 import random
 import os
-import msvcrt
+import sys
+if os.name == "posix":
+	import select
+	import tty
+	import termios
+elif os.name == "nt":
+	import msvcrt
+
+# import readline
+
+def waitfor_user_input_char():
+	input_string = ""
+	while True:
+		if os.name == "nt": 
+			msvcrt.kbhit()
+			key = msvcrt.getch()
+			key_char = key.decode('utf-8')
+			return key_char
+		
+		if os.name == "posix":
+			# sys.stdin in select.select([sys.stdin], [], [], 0)[0]
+			# key_char = sys.stdin.read(1)
+			# return key_char
+			fd = sys.stdin.fileno()
+			old_settings = termios.tcgetattr(fd)
+			try:
+				tty.setraw(sys.stdin.fileno())
+				ch = sys.stdin.read(1)
+			finally:
+				termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+			return ch
 
 with open("words.txt","r") as f:
 	lines = f.readlines()
 
 def clear_screen():
-	if os.name == "posix":  # for UNIX and Linux
+	if os.name == "posix":
 		os.system("clear")
-	elif os.name == "nt":  # for Windows
+	elif os.name == "nt":
 		os.system("cls")
 
-def waitfor_user_input_char():
-	input_string = ""
-	while True:
-		if msvcrt.kbhit():
-			key = msvcrt.getch()
-			key_char = key.decode('utf-8')
-			return key_char
-
+# def waitfor_user_input_char():
+# 	input_string = ""
+# 	while True:
+# 		if msvcrt.kbhit():
+# 			key = msvcrt.getch()
+# 			key_char = key.decode('utf-8')
+# 			return key_char
 
 def print_colored(text, color):
 	returnstring = ""
@@ -75,8 +104,9 @@ class Game:
 		self.tip_list                       = []
 		self.used_letters                   = {}#letter:color
 		self.letters                        = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
+		self.small_letters                  = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]
 		self.color_list                     = ["black","grey","green","black"]
-		self.vertical_separate_character  = "|"
+		self.vertical_separate_character    = "|"
 		self.current_user_input             = ""
 		self.WIN                            = "win"
 		self.LOST                           = "lost"
@@ -200,13 +230,17 @@ class Game:
 	def read_user_input(self):
 		user_input = waitfor_user_input_char()
 		self.system_message = ""
-		if user_input == "\b":
+		if user_input == "\b" or user_input == '\x7f' :
 			if len(self.current_user_input) > 0:
 				self.current_user_input = self.current_user_input[0:-1]
 		elif user_input == "\r":
-			if(self.add_tip(self.current_user_input)):
-				self.current_user_input = ""
-		else:
+			# if(self.add_tip(self.current_user_input)):
+			self.add_tip(self.current_user_input)
+			self.current_user_input = ""
+		elif user_input == '\x03':
+			print("\nExit")
+			sys.exit()
+		elif user_input in self.small_letters or user_input in self.letters:
 			if user_input.islower():
 				user_input =  user_input.upper()
 			if len(self.current_user_input) < self.wordlen:
@@ -218,7 +252,7 @@ class Game:
 		screen_to_display = ""
 		# clear_screen()
 		screen_to_display = "\033[H\033[J"
-		screen_to_display += draw_horizontal_line(self.wordlen+1,line_characters="____")
+		# screen_to_display += draw_horizontal_line(self.wordlen+1,line_characters="____")
 		screen_to_display += self.draw_board()
 		screen_to_display += self.print_letters()
 		screen_to_display += self.system_message
@@ -239,13 +273,7 @@ class Game:
 			# wordin = input("Write your word: ")
 			# self.add_tip(wordin)
 
-
 # draw_board(["bride","bowel"],"blade",6)
-
 
 game = Game(6,"words.txt",num_of_letters_if_random=5)
 game.play()
-
-
-
-
